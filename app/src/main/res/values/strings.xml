@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Manners Photo Blog</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    
+    <array name="category_list">
+        <item>Latest Posts</item>
+        <item>General Photography</item>
+        <item>Landscape Photography</item>
+        <item>Portrait Photography</item>
+        <item>Candid Photography</item>
+        <item>Smartphone Photography</item>
+    </array>
+
+</resources>
