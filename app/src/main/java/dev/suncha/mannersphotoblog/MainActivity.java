@@ -1,6 +1,12 @@
 package dev.suncha.mannersphotoblog;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -9,11 +15,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,37 +35,73 @@ public class MainActivity extends ActionBarActivity {
 
     ListView list;
     TextView title;
+    ImageView thumbnail;
+    ImageLoader imageLoader = new ImageLoader(this);
 
     ArrayList<HashMap<String, String>> titleList = new ArrayList<HashMap<String, String>>();
     //URL to get JSON Array
     private static String url = "http://www.mannersphoto.com/api/get_recent_posts/";
     //JSON node names
-    private static final String TAG_POSTS="posts";
-    private static final String TAG_TITLE="title";
-    JSONArray titles = null;
+    private static final String TAG_POSTS = "posts";
+    private static final String TAG_TITLE = "title";
+    private static final String TAG_ATTACHMENTS = "attachments";
+    private static final String TAG_URL = "url";
+    JSONArray titles = null, attachments = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Spinner spinner= (Spinner)findViewById(R.id.spinner_nav);
-        ArrayAdapter<CharSequence> adapter=ArrayAdapter.createFromResource(this,R.array.category_list,android.R.layout.simple_spinner_dropdown_item);
+        Spinner spinner = (Spinner) findViewById(R.id.spinner_nav);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.category_list, android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
 
         titleList = new ArrayList<HashMap<String, String>>();
-        new JSONParse().execute();
+
+        if (isNetworkAvailable() == true) {
+
+            new JSONParse().execute();
+        } else {
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+            alertDialogBuilder.setMessage("Please connect to internet first");
+            alertDialogBuilder.setCancelable(false);
+            alertDialogBuilder.setTitle("No Connection");
+            alertDialogBuilder.setNegativeButton("Dismiss", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Intent intent = new Intent(Intent.ACTION_MAIN);
+                    intent.addCategory(Intent.CATEGORY_HOME);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                }
+            });
+            alertDialogBuilder.show();
+        }
     }
 
-    private  class JSONParse extends AsyncTask<String,String,JSONObject>{
+    public boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = cm.getActiveNetworkInfo();
+        // if no network is available networkInfo will be null
+        // otherwise check if we are connected
+        if (networkInfo != null && networkInfo.isConnected()) {
+            return true;
+        }
+        return false;
+    }
+
+    private class JSONParse extends AsyncTask<String, String, JSONObject> {
         private ProgressDialog pDialog;
 
         @Override
-        protected void onPreExecute(){
+        protected void onPreExecute() {
             super.onPreExecute();
-            title=(TextView)findViewById(R.id.title);
-            pDialog=new ProgressDialog(MainActivity.this);
+            title = (TextView) findViewById(R.id.title);
+            thumbnail = (ImageView) findViewById(R.id.image);
+
+            pDialog = new ProgressDialog(MainActivity.this);
             pDialog.setMessage("Contacting Photographers...");
             pDialog.setIndeterminate(false);
             pDialog.setCancelable(false);
@@ -75,38 +117,41 @@ public class MainActivity extends ActionBarActivity {
         }
 
         @Override
-        protected void onPostExecute(JSONObject json){
-            try{
+        protected void onPostExecute(JSONObject json) {
+            try {
                 //Getting JSON from URL
-                titles=json.getJSONArray(TAG_POSTS);
-                for(int i=0;i<titles.length();i++){
+                titles = json.getJSONArray(TAG_POSTS);
+
+                for (int i = 0; i < titles.length(); i++) {
                     JSONObject c = titles.getJSONObject(i);
+
                     //Storing JSON item in a Variable
-                    String title=c.getString(TAG_TITLE);
+                    String title = c.getString(TAG_TITLE);
+
                     //Adding value Hashmap key=> value
-                    HashMap<String,String>map = new HashMap<String,String>();
-                    map.put(TAG_TITLE,title);
+                    HashMap<String, String> map = new HashMap<String, String>();
+                    map.put(TAG_TITLE, title);
+
+
                     titleList.add(map);
 
-                    list=(ListView)findViewById(R.id.list);
-                    ListAdapter adapter=new SimpleAdapter(MainActivity.this,titleList,
-                            R.layout.list_v,new String[]{TAG_TITLE}, new int[]{
+                    list = (ListView) findViewById(R.id.list);
+                    ListAdapter adapter = new SimpleAdapter(MainActivity.this, titleList,
+                            R.layout.list_v, new String[]{TAG_TITLE}, new int[]{
                             R.id.title});
                     list.setAdapter(adapter);
                     pDialog.dismiss();
                     list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                         @Override
                         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                            Toast.makeText(MainActivity.this, titleList.get(+position).get("title"),Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, titleList.get(+position).get("title"), Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
-            }catch (JSONException e){
+            } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
-
-
     }
 
 
@@ -128,7 +173,6 @@ public class MainActivity extends ActionBarActivity {
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 }
