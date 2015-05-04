@@ -10,6 +10,7 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.text.Spanned;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -34,7 +35,7 @@ import java.util.HashMap;
 public class MainActivity extends ActionBarActivity {
 
     ListView list;
-    TextView title;
+    TextView title, excerpt_tv;
     ImageView thumbnail;
     ImageLoader imageLoader = new ImageLoader(this);
 
@@ -44,9 +45,11 @@ public class MainActivity extends ActionBarActivity {
     //JSON node names
     private static final String TAG_POSTS = "posts";
     private static final String TAG_TITLE = "title";
+    private static final String TAG_EXCERPT="excerpt";
+
     private static final String TAG_ATTACHMENTS = "attachments";
     private static final String TAG_URL = "url";
-    JSONArray titles = null, attachments = null;
+    JSONArray titles = null,attachments = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,10 +102,11 @@ public class MainActivity extends ActionBarActivity {
         protected void onPreExecute() {
             super.onPreExecute();
             title = (TextView) findViewById(R.id.title);
+            excerpt_tv=(TextView)findViewById(R.id.excerpt);
             thumbnail = (ImageView) findViewById(R.id.image);
 
             pDialog = new ProgressDialog(MainActivity.this);
-            pDialog.setMessage("Contacting Photographers...");
+            pDialog.setMessage("Fetching Content...");
             pDialog.setIndeterminate(false);
             pDialog.setCancelable(false);
             pDialog.show();
@@ -122,23 +126,25 @@ public class MainActivity extends ActionBarActivity {
                 //Getting JSON from URL
                 titles = json.getJSONArray(TAG_POSTS);
 
+
                 for (int i = 0; i < titles.length(); i++) {
                     JSONObject c = titles.getJSONObject(i);
+                    //JSONObject e=titles.getJSONObject(i);
 
                     //Storing JSON item in a Variable
                     String title = c.getString(TAG_TITLE);
+                    String excerpt= c.getString(TAG_EXCERPT);
 
                     //Adding value Hashmap key=> value
-                    HashMap<String, String> map = new HashMap<String, String>();
+                    HashMap<String, String> map = new HashMap<>();
                     map.put(TAG_TITLE, title);
-
-
+                    map.put(TAG_EXCERPT, excerpt);
                     titleList.add(map);
 
                     list = (ListView) findViewById(R.id.list);
                     ListAdapter adapter = new SimpleAdapter(MainActivity.this, titleList,
-                            R.layout.list_v, new String[]{TAG_TITLE}, new int[]{
-                            R.id.title});
+                            R.layout.list_v, new String[]{TAG_TITLE,TAG_EXCERPT}, new int[]{
+                            R.id.title,R.id.excerpt});
                     list.setAdapter(adapter);
                     pDialog.dismiss();
                     list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
